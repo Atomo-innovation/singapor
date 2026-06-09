@@ -6,6 +6,7 @@ extracts dense landmarks, attributes, tracks IDs, detects line crossings,
 writes annotated frames to a new video, and outputs a synced JSON telemetry file.
 """
 
+import argparse
 import cv2
 import numpy as np
 import os
@@ -19,10 +20,13 @@ import inspireface as isf
 # CONFIGURATION & CONSTANTS
 # ==========================================
 
-INPUT_VIDEO = "public/entrance.mp4"
-TEMP_VIDEO = "public/temp_processed.mp4"
-OUTPUT_VIDEO = "public/entrance_processed.mp4"
-JSON_OUTPUT = "public/entrance_data.json"
+PUBLIC_DIR = "public"
+INPUT_VIDEOS = [
+    "public/at1.avi",
+    "public/at2.avi",
+    "public/at3.avi",
+]
+PLAYLIST_OUTPUT = "public/playlist.json"
 
 race_tags = ["Black", "Asian", "Latino/Hispanic", "Middle Eastern", "White"]
 gender_tags = ["Female", "Male"]
@@ -137,39 +141,85 @@ class CentroidTracker:
 # PROCESSING PIPELINE
 # ==========================================
 
-def main():
-    print(f"🎬 Initializing InspireFace Video Processing...")
-    
-    # 1. Initialize InspireFace Session
-    isf.switch_image_processing_backend(isf.HF_IMAGE_PROCESSING_CPU)
-    
-    opt = (
-        isf.HF_ENABLE_FACE_RECOGNITION |
-        isf.HF_ENABLE_QUALITY |
-        isf.HF_ENABLE_MASK_DETECT |
-        isf.HF_ENABLE_LIVENESS |
-        isf.HF_ENABLE_INTERACTION |
-        isf.HF_ENABLE_FACE_ATTRIBUTE |
-        isf.HF_ENABLE_FACE_EMOTION
+def video_paths(input_video):
+    base = os.path.splitext(os.path.basename(input_video))[0]
+    return {
+        "id": base,
+        "temp": os.path.join(PUBLIC_DIR, f"temp_{base}_processed.mp4"),
+        "output_video": os.path.join(PUBLIC_DIR, f"{base}_processed.mp4"),
+        "output_json": os.path.join(PUBLIC_DIR, f"{base}_data.json"),
+    }
+
+
+def needs_reprocess(input_video, output_video, output_json):
+    if not os.path.exists(input_video):
+        return False
+    if not os.path.exists(output_video) or not os.path.exists(output_json):
+        return True
+    input_mtime = os.path.getmtime(input_video)
+    return (
+        input_mtime > os.path.getmtime(output_video)
+        or input_mtime > os.path.getmtime(output_json)
     )
-    session = isf.InspireFaceSession(opt, isf.HF_DETECT_MODE_ALWAYS_DETECT)
-    session.set_detection_confidence_threshold(0.35)
-    session.set_filter_minimum_face_pixel_size(24)
 
-    # 2. Open raw video
-    if not os.path.exists(INPUT_VIDEO):
-        print(f"❌ Input video not found at: {INPUT_VIDEO}")
-        sys.exit(1)
 
-    cap = cv2.VideoCapture(INPUT_VIDEO)
+def normalize_fps(raw_fps):
+    fps = float(raw_fps or 30.0)
+    if fps <= 0 or fps > 120 or math.isnan(fps):
+        fps = 30.0
+    return round(fps, 3)
+
+
+def transcode_video(temp_video, output_video, fps):
+    print(f"🎥 Transcoding to H.264 @ {fps:.3f} fps...")
+    gop = max(12, int(round(fps * 2)))
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-i", temp_video, "-an",
+        "-vcodec", "libx264", "-preset", "medium", "-profile:v", "main",
+        "-crf", "20", "-pix_fmt", "yuv420p", "-r", str(fps),
+        "-vsync", "cfr", "-g", str(gop), "-keyint_min", str(gop),
+        "-sc_threshold", "0", "-movflags", "+faststart", output_video,
+    ]
+    try:
+        subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"🎉 Saved: {output_video}")
+        if os.path.exists(temp_video):
+            os.remove(temp_video)
+    except Exception as e:
+        print(f"❌ Transcode failed: {e}")
+        if os.path.exists(temp_video):
+            os.rename(temp_video, output_video)
+
+
+def init_inspireface():
+    candidates = [
+        os.path.expanduser("~/.inspireface/ms/tunmxy/InspireFace/Pikachu"),
+        os.path.expanduser("~/.inspireface/models/Pikachu"),
+    ]
+    resource_path = next((p for p in candidates if os.path.exists(p)), None)
+    isf.ignore_check_latest_model(True)
+    if isf.query_launch_status():
+        return
+    if resource_path:
+        print(f"Using cached model: {resource_path}")
+        if not isf.launch(resource_path=resource_path):
+            raise RuntimeError("InspireFace launch failed")
+        return
+    isf.use_oss_download(True)
+    if not isf.launch():
+        raise RuntimeError("InspireFace launch failed")
+
+
+def process_single_video(session, hog, input_video, temp_video, output_video, output_json):
+    print(f"\n{'=' * 60}\n🎬 Processing: {input_video}\n{'=' * 60}")
+    if not os.path.exists(input_video):
+        raise FileNotFoundError(input_video)
+
+    cap = cv2.VideoCapture(input_video)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    fps = normalize_fps(cap.get(cv2.CAP_PROP_FPS))
     orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
-    # Load fallback HOG human detector for head detection
-    hog = cv2.HOGDescriptor()
-    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
     
     # Target scale
     target_w = 960
@@ -180,7 +230,10 @@ def main():
 
     # Set up OpenCV video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(TEMP_VIDEO, fourcc, fps, (target_w, target_h))
+    out = cv2.VideoWriter(temp_video, fourcc, fps, (target_w, target_h))
+    if not out.isOpened():
+        cap.release()
+        raise RuntimeError(f"Cannot open writer: {temp_video}")
 
     # Initialize tracker
     tracker = CentroidTracker(maxDisappeared=15, maxDistance=120)
@@ -482,31 +535,76 @@ def main():
     print("\n✅ Done processing frames. Compiling outputs...")
 
     # 3. Save JSON telemetry file
-    with open(JSON_OUTPUT, "w") as f:
+    with open(output_json, "w") as f:
         json.dump(frame_stats, f, indent=2)
-    print(f"📊 Telemetry data saved to: {JSON_OUTPUT}")
+    print(f"📊 Telemetry saved: {output_json}")
 
-    # 4. Transcode to web-friendly H.264
-    print("🎥 Transcoding video via ffmpeg to ensure native browser playback...")
-    ffmpeg_cmd = [
-        "ffmpeg", "-y",
-        "-i", TEMP_VIDEO,
-        "-vcodec", "libx264",
-        "-crf", "22",
-        "-pix_fmt", "yuv420p",
-        OUTPUT_VIDEO
-    ]
-    
-    try:
-        subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print(f"🎉 Processed H.264 video saved to: {OUTPUT_VIDEO}")
-        
-        # Clean up temporary raw video
-        if os.path.exists(TEMP_VIDEO):
-            os.remove(TEMP_VIDEO)
-    except Exception as e:
-        print(f"❌ Transcoding failed: {e}. Moving raw file directly.")
-        os.rename(TEMP_VIDEO, OUTPUT_VIDEO)
+    transcode_video(temp_video, output_video, fps)
+    duration = frame_stats[-1]["timestamp"] if frame_stats else 0
+    return {"frames": len(frame_stats), "duration": duration, "fps": fps}
+
+
+def write_playlist(entries):
+    with open(PLAYLIST_OUTPUT, "w") as f:
+        json.dump({"version": 1, "loop": True, "videos": entries}, f, indent=2)
+    print(f"\n📋 Playlist: {PLAYLIST_OUTPUT} ({len(entries)} videos)")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Reprocess all videos")
+    args = parser.parse_args()
+
+    print("🎬 Initializing InspireFace Video Processing...")
+    init_inspireface()
+    isf.switch_image_processing_backend(isf.HF_IMAGE_PROCESSING_CPU)
+    opt = (
+        isf.HF_ENABLE_FACE_RECOGNITION | isf.HF_ENABLE_QUALITY |
+        isf.HF_ENABLE_MASK_DETECT | isf.HF_ENABLE_LIVENESS |
+        isf.HF_ENABLE_INTERACTION | isf.HF_ENABLE_FACE_ATTRIBUTE |
+        isf.HF_ENABLE_FACE_EMOTION
+    )
+    session = isf.InspireFaceSession(opt, isf.HF_DETECT_MODE_ALWAYS_DETECT)
+    session.set_detection_confidence_threshold(0.35)
+    session.set_filter_minimum_face_pixel_size(24)
+    hog = cv2.HOGDescriptor()
+    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+
+    available = [v for v in INPUT_VIDEOS if os.path.exists(v)]
+    if not available:
+        print("❌ No input videos found:", INPUT_VIDEOS)
+        sys.exit(1)
+
+    playlist_entries = []
+    for idx, input_video in enumerate(available, start=1):
+        paths = video_paths(input_video)
+        if not args.force and not needs_reprocess(input_video, paths["output_video"], paths["output_json"]):
+            print(f"⏭️  Skipping {input_video} (up to date)")
+            try:
+                with open(paths["output_json"]) as f:
+                    stats = json.load(f)
+                duration = stats[-1]["timestamp"] if stats else 0
+            except Exception:
+                duration = 0
+        else:
+            meta = process_single_video(
+                session, hog, input_video,
+                paths["temp"], paths["output_video"], paths["output_json"],
+            )
+            duration = meta["duration"]
+
+        base = paths["id"]
+        playlist_entries.append({
+            "id": base,
+            "label": f"Camera {idx}",
+            "video": f"/singapor/{base}_processed.mp4",
+            "telemetry": f"/singapor/{base}_data.json",
+            "duration": duration,
+        })
+
+    write_playlist(playlist_entries)
+    print("\n✅ Done — refresh dashboard after processing completes.")
+
 
 if __name__ == "__main__":
     main()

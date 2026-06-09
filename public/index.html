@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ATOMO — Surveillance Operations</title>
+  <title>ATOMO — Analytics Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/dashboard.css" />
 </head>
 <body>
-
-<!-- ══ SCAN LINE OVERLAY ══════════════════════════════════════════════ -->
-<div class="scanlines" aria-hidden="true"></div>
 
 <!-- ══ TOP BAR ═══════════════════════════════════════════════════════ -->
 <header class="topbar">
@@ -29,7 +26,7 @@
       </div>
       <div class="brand-text">
         <span class="brand-name">ATOMO</span>
-        <span class="brand-sub">SURVEILLANCE OPS v2.4.1</span>
+        <span class="brand-sub">Analytics Dashboard</span>
       </div>
     </div>
   </div>
@@ -37,12 +34,12 @@
   <div class="topbar-center">
     <div class="sys-stat">
       <span class="sys-dot live"></span>
-      <span class="sys-label">SYSTEM ONLINE</span>
+      <span class="sys-label">Online</span>
     </div>
     <div class="divider-v"></div>
     <div class="sys-stat">
       <span class="sys-dot"></span>
-      <span class="sys-label">CAM 01 — MAIN ENTRANCE</span>
+      <span class="sys-label">Camera 01 — Main Entrance</span>
     </div>
     <div class="divider-v"></div>
     <div id="clock-wrap" class="clock-wrap">
@@ -79,8 +76,8 @@
         <span class="kpi-lbl">CONF AVG</span>
       </div>
     </div>
-    <div class="rec-badge">
-      <span class="rec-dot"></span>REC
+    <div class="live-badge">
+      <span class="live-dot"></span>Live
     </div>
   </div>
 </header>
@@ -101,7 +98,7 @@
       <div class="panel-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
         <span class="panel-tag">01</span>
-        <span class="panel-title">SEX DISTRIBUTION</span>
+        <span class="panel-title">Sex Distribution</span>
       </div>
       <div class="panel-body donut-panel">
         <div class="donut-wrap">
@@ -120,7 +117,7 @@
       <div class="panel-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
         <span class="panel-tag">02</span>
-        <span class="panel-title">AGE BREAKDOWN</span>
+        <span class="panel-title">Age Breakdown</span>
       </div>
       <div class="panel-body panel-body-chart">
         <canvas id="age-chart"></canvas>
@@ -132,7 +129,7 @@
       <div class="panel-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
         <span class="panel-tag">03</span>
-        <span class="panel-title">ORIGIN / ETHNICITY</span>
+        <span class="panel-title">Origin / Ethnicity</span>
       </div>
       <div class="panel-body panel-body-chart">
         <canvas id="origin-chart"></canvas>
@@ -145,11 +142,11 @@
   <section class="col-center">
 
     <div class="panel panel-video" data-panel-id="video" data-resizable="false">
-      <!-- Corner brackets -->
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
+      <!-- Corner brackets hidden in professional theme -->
+      <div class="corner tl" aria-hidden="true"></div>
+      <div class="corner tr" aria-hidden="true"></div>
+      <div class="corner bl" aria-hidden="true"></div>
+      <div class="corner br" aria-hidden="true"></div>
 
       <div class="video-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
@@ -166,7 +163,7 @@
       </div>
 
       <div class="video-wrap">
-        <video id="feed-video" autoplay muted loop playsinline>
+        <video id="feed-video" autoplay muted playsinline>
           <source src="/videos/feed.mp4" type="video/mp4" />
           <source src="/videos/feed.webm" type="video/webm" />
         </video>
@@ -184,43 +181,43 @@
               </svg>
             </div>
             <p class="vp-title">NO SIGNAL</p>
-            <p class="vp-hint">Place <code>feed.mp4</code> or <code>feed.webm</code><br/>into <code>public/videos/</code></p>
+            <p class="vp-hint">Singapore feed loads from <code>singapor/public/</code><br/>or place <code>feed.mp4</code> in <code>public/videos/</code></p>
           </div>
         </div>
 
         <!-- HUD overlays -->
         <div class="hud-tl">
-          <span class="hud-label">DETECTION ACTIVE</span>
-          <span class="hud-val" id="det-count-hud">0 SUBJECTS</span>
+          <span class="hud-label">Active</span>
+          <span class="hud-val" id="det-count-hud">0 subjects</span>
         </div>
         <div class="hud-tr">
-          <span class="hud-label">CONFIDENCE</span>
+          <span class="hud-label">Confidence</span>
           <span class="hud-val accent" id="conf-hud">—%</span>
         </div>
         <div class="hud-bl">
           <span class="hud-coords" id="hud-coords">LAT 23.0225° N  |  LNG 72.5714° E</span>
         </div>
         <div class="hud-br">
-          <span class="hud-label">FRAME</span>
+          <span class="hud-label">Frame</span>
           <span class="hud-val mono" id="frame-counter">000000</span>
         </div>
 
-        <!-- Sweep line -->
-        <div class="sweep-line" id="sweep-line"></div>
+        <!-- Sweep line removed for clean UI -->
+        <div class="sweep-line" id="sweep-line" aria-hidden="true"></div>
       </div>
 
       <div class="video-ft">
         <div class="vft-item">
           <span class="vft-dot green"></span>
-          <span>AI DETECTION ENGINE RUNNING</span>
+          <span>Detection engine active</span>
         </div>
         <div class="vft-item">
           <span class="vft-dot yellow"></span>
-          <span id="last-det-time">LAST DETECT: —</span>
+          <span id="last-det-time">Last detection: —</span>
         </div>
         <div class="vft-item">
           <span class="vft-dot"></span>
-          <span>STREAM ENCRYPTED · AES-256</span>
+          <span>Secure stream</span>
         </div>
       </div>
     </div>
@@ -235,7 +232,7 @@
       <div class="panel-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
         <span class="panel-tag">04</span>
-        <span class="panel-title">FOOT TRAFFIC</span>
+        <span class="panel-title">Foot Traffic</span>
         <div class="chart-tabs">
           <button class="tab-btn active" data-tab="hourly">HOURLY</button>
           <button class="tab-btn" data-tab="daily">DAILY</button>
@@ -251,9 +248,9 @@
       <div class="panel-hd">
         <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
         <span class="panel-tag">05</span>
-        <span class="panel-title">DETECTION LOG</span>
+        <span class="panel-title">Detection Log</span>
         <div class="badge-live">
-          <span class="rec-dot sm"></span>LIVE
+          <span class="live-dot sm"></span>Live
         </div>
       </div>
 
@@ -280,7 +277,7 @@
 <div class="layout-backdrop" id="layout-backdrop" aria-hidden="true"></div>
 <aside class="layout-panel" id="layout-panel" aria-label="Layout settings">
   <div class="layout-panel-hd">
-    <span class="layout-panel-title">LAYOUT CONFIG</span>
+    <span class="layout-panel-title">Layout Settings</span>
     <button type="button" class="layout-panel-close" id="layout-close-btn" aria-label="Close">×</button>
   </div>
   <div class="layout-panel-body">
@@ -420,6 +417,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/js/layout-manager.js"></script>
 <script src="/js/layout-drag.js"></script>
+<script src="/js/singapore-engine.js"></script>
 <script src="/js/dashboard.js"></script>
 </body>
 </html>

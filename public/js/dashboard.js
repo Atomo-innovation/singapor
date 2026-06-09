@@ -37,8 +37,8 @@ function getChartFontSize() {
   return parseInt(v, 10) || 11;
 }
 
-Chart.defaults.color           = '#4a5568';
-Chart.defaults.font.family     = "'JetBrains Mono', monospace";
+Chart.defaults.color           = '#94a3b8';
+Chart.defaults.font.family     = "'Inter', sans-serif";
 Chart.defaults.font.size       = getChartFontSize();
 Chart.defaults.plugins.legend.display = false;
 
@@ -63,14 +63,14 @@ function refreshChartsForLayout() {
 
 window.addEventListener('layout-applied', refreshChartsForLayout);
 
-const CYAN    = '#00d4ff';
-const PURPLE  = '#8b5cf6';
-const PINK    = '#f43f5e';
-const GREEN   = '#10b981';
-const YELLOW  = '#f59e0b';
-const ORANGE  = '#f97316';
+const CYAN    = '#2563eb';
+const PURPLE  = '#6366f1';
+const PINK    = '#e11d48';
+const GREEN   = '#059669';
+const YELLOW  = '#d97706';
+const ORANGE  = '#ea580c';
 
-const GRID_COLOR = 'rgba(0,200,255,0.05)';
+const GRID_COLOR = 'rgba(15,23,42,0.06)';
 const HOURS = ['12a','1a','2a','3a','4a','5a','6a','7a','8a','9a','10a','11a',
                '12p','1p','2p','3p','4p','5p','6p','7p','8p','9p','10p','11p'];
 const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -81,8 +81,8 @@ const trafficCtx = document.getElementById('traffic-chart').getContext('2d');
 function buildTrafficGradient() {
   const h = trafficCtx.canvas.parentElement?.clientHeight || 200;
   const grad = trafficCtx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(0,212,255,0.35)');
-  grad.addColorStop(1, 'rgba(0,212,255,0.02)');
+  grad.addColorStop(0, 'rgba(37,99,235,0.25)');
+  grad.addColorStop(1, 'rgba(37,99,235,0.02)');
   return grad;
 }
 
@@ -160,9 +160,18 @@ function renderTrafficChart(state) {
   if (currentTab === 'hourly') {
     trafficChart.data.labels = HOURS;
     trafficChart.data.datasets[0].data = state.hourlyData;
+    trafficChart.options.spanGaps = false;
   } else {
     trafficChart.data.labels = DAYS;
-    trafficChart.data.datasets[0].data = state.dailyData;
+    const daily = state.dailyData ? [...state.dailyData] : [];
+    if (state.source === 'singapore') {
+      const total = state.totalToday || 0;
+      for (let i = 0; i < daily.length; i++) {
+        if (daily[i] > total) daily[i] = null;
+      }
+    }
+    trafficChart.data.datasets[0].data = daily;
+    trafficChart.options.spanGaps = false;
   }
   refreshTrafficLineStyle();
   trafficChart.update('none');
@@ -177,7 +186,7 @@ const sexChart = new Chart(sexCtx, {
     datasets: [{
       data: [1,1],
       backgroundColor: [CYAN, PINK],
-      borderColor: '#0e1320',
+      borderColor: '#ffffff',
       borderWidth: 4,
       hoverOffset: 3,
     }]
@@ -199,7 +208,12 @@ const sexChart = new Chart(sexCtx, {
 registerChart(sexChart);
 
 function renderSexBars(data) {
-  const total = (data.Male + data.Female) || 1;
+  const total = (data.Male + data.Female);
+  if (!total) {
+    document.getElementById('sex-pct').textContent = '0%';
+    document.getElementById('sex-bars').innerHTML = '';
+    return;
+  }
   const mPct  = Math.round(data.Male   / total * 100);
   const fPct  = Math.round(data.Female / total * 100);
   document.getElementById('sex-pct').textContent = mPct + '%';
@@ -223,8 +237,8 @@ function renderSexBars(data) {
 
 // ── Age Chart ─────────────────────────────────────────────────────────
 const AGE_LABELS   = ['0–17','18–25','26–35','36–50','51–65','65+'];
-const AGE_COLORS   = [PURPLE,'rgba(0,212,255,0.9)','rgba(0,212,255,0.7)',
-                      'rgba(0,212,255,0.5)','rgba(100,116,139,0.6)','rgba(100,116,139,0.4)'];
+const AGE_COLORS   = [PURPLE,'rgba(37,99,235,0.85)','rgba(37,99,235,0.65)',
+                      'rgba(37,99,235,0.45)','rgba(100,116,139,0.5)','rgba(148,163,184,0.4)'];
 const ageCtx = document.getElementById('age-chart').getContext('2d');
 const ageChart = new Chart(ageCtx, {
   type: 'bar',
@@ -255,7 +269,7 @@ const originChart = new Chart(originCtx, {
       data: Array(7).fill(0),
       backgroundColor: ctx => {
         const alpha = 0.2 + (1 - ctx.dataIndex / 7) * 0.65;
-        return `rgba(0,212,255,${alpha.toFixed(2)})`;
+        return `rgba(37,99,235,${alpha.toFixed(2)})`;
       },
       hoverBackgroundColor: CYAN,
       borderRadius: 3, borderSkipped: false,
@@ -383,53 +397,78 @@ function renderLog(detections) {
   logEl.innerHTML = rows;
 }
 
-// ── Socket.IO ─────────────────────────────────────────────────────────
-const socket = io();
+// ── Live detection state ──────────────────────────────────────────────
 let lastState = null;
 let confHistory = [];
 
-socket.on('detection_update', state => {
+function applyDetectionState(state) {
+  if (window.SINGAPORE_MODE && state?.source !== 'singapore') return;
   lastState = state;
 
-  // KPI header
   document.getElementById('active-count').textContent = state.activePeople;
   document.getElementById('total-count').textContent  = state.totalToday.toLocaleString();
 
-  // Confidence avg (rolling)
   if (state.detections && state.detections.length) {
     const latest = state.detections.slice(0, 10).map(d => d.confidence);
     confHistory = [...latest, ...confHistory].slice(0, 30);
-    const avg = confHistory.reduce((a,b) => a+b, 0) / confHistory.length;
-    document.getElementById('conf-avg').textContent    = Math.round(avg * 100) + '%';
-    document.getElementById('conf-hud').textContent    = Math.round(avg * 100) + '%';
+    const avg = confHistory.reduce((a, b) => a + b, 0) / confHistory.length;
+    document.getElementById('conf-avg').textContent = Math.round(avg * 100) + '%';
+    document.getElementById('conf-hud').textContent = Math.round(avg * 100) + '%';
   }
 
-  // HUD
-  document.getElementById('det-count-hud').textContent = `${state.activePeople} SUBJECTS`;
+  document.getElementById('det-count-hud').textContent = `${state.activePeople} subjects`;
 
-  // Last detect time
   if (state.detections && state.detections[0]) {
     const t = new Date(state.detections[0].ts).toLocaleTimeString('en-US', { hour12: false });
-    document.getElementById('last-det-time').textContent = `LAST DETECT: ${t}`;
+    document.getElementById('last-det-time').textContent = `Last detection: ${t}`;
   }
 
-  // Traffic
   renderTrafficChart(state);
 
-  // Sex
-  sexChart.data.datasets[0].data = [state.sexBreakdown.Male, state.sexBreakdown.Female];
+  const male = state.sexBreakdown?.Male || 0;
+  const female = state.sexBreakdown?.Female || 0;
+  const sexTotal = male + female;
+  const ds = sexChart.data.datasets[0];
+  if (sexTotal === 0) {
+    ds.data = [1];
+    sexChart.data.labels = [''];
+    ds.backgroundColor = ['rgba(148,163,184,0.35)'];
+  } else {
+    sexChart.data.labels = ['Male', 'Female'];
+    ds.data = [male, female];
+    ds.backgroundColor = [CYAN, PINK];
+  }
   sexChart.update('none');
   renderSexBars(state.sexBreakdown);
 
-  // Age
   ageChart.data.datasets[0].data = Object.values(state.ageBreakdown);
   ageChart.update('none');
 
-  // Origin
   originChart.data.datasets[0].data = Object.values(state.originBreakdown);
   originChart.update('none');
 
-  // Overlay + log
-  buildOverlay(state.activePeople, state.detections || []);
+  if (!window.SINGAPORE_MODE) {
+    buildOverlay(state.activePeople, state.detections || []);
+  } else {
+    overlayBoxes = [];
+  }
+
   renderLog(state.detections || []);
-});
+}
+
+window.applyDetectionState = applyDetectionState;
+
+function initSocketFeed() {
+  const socket = io();
+  socket.on('detection_update', applyDetectionState);
+}
+
+async function initDataFeed() {
+  if (typeof window.initSingaporeEngine === 'function') {
+    const ok = await window.initSingaporeEngine();
+    if (ok) return;
+  }
+  initSocketFeed();
+}
+
+initDataFeed();

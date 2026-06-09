@@ -65,3 +65,5 @@ pipe results into `io.emit()` and the dashboard updates live.
 | Video       | HTML5 `<video>` (mp4/webm)  |
 | Fonts       | Inter + JetBrains Mono      |
 # singapor
+# person_detection
+# person_detection
