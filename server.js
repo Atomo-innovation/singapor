@@ -56,6 +56,8 @@ function buildPlaylistEntry(name, index) {
 }
 
 function discoverPlaylist() {
+  const fromInputs = PLAYLIST_INPUTS.map((name, i) => buildPlaylistEntry(name, i + 1)).filter(Boolean);
+  if (fromInputs.length > 0) return fromInputs;
   if (fs.existsSync(PLAYLIST_FILE)) {
     const saved = readJsonSafe(PLAYLIST_FILE);
     if (saved?.videos?.length) {
@@ -72,7 +74,7 @@ function discoverPlaylist() {
       });
     }
   }
-  return PLAYLIST_INPUTS.map((name, i) => buildPlaylistEntry(name, i + 1)).filter(Boolean);
+  return [];
 }
 
 function needsReprocess() {

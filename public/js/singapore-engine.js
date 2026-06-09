@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
    ATOMO — Singapore multi-video playlist engine
-   Plays new1–new4 in sequence; analytics persist and grow across loops.
+   Plays at1 → at2 → at3 in sequence; analytics persist and grow across loops.
 ══════════════════════════════════════════════════════════════════════ */
 'use strict';
 

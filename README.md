@@ -67,3 +67,4 @@ pipe results into `io.emit()` and the dashboard updates live.
 # singapor
 # person_detection
 # person_detection
+# person_detection
