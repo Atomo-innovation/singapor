@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SingaSense - Singapore Mall Footfall & Demographic Analytics</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="dashboard-wrapper">
+      <!-- HEADER -->
+      <header class="dashboard-header">
+        <div class="brand">
+          <div class="logo-pulse"></div>
+          <div>
+            <h1>SINGASENSE</h1>
+            <span class="tagline">MALL FOOTFALL & DEMOGRAPHIC INTELLIGENCE</span>
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <!-- Multi-site Location Selector -->
+          <div class="control-group">
+            <label for="location-select">Location / Zone</label>
+            <div class="select-wrapper">
+              <select id="location-select">
+                <option value="all">Singapore Mall (All Zones)</option>
+                <option value="north_wing">North Wing (Retail & Dining)</option>
+                <option value="south_plaza">South Plaza (Event & Entertainment)</option>
+                <option value="food_court">Food Court (Level 3)</option>
+                <option value="fashion_hub">Fashion Hub (Level 1-2)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Live Simulator Toggle -->
+          <button id="toggle-simulator-btn" class="btn btn-secondary btn-glow">
+            <span class="btn-icon">⚡</span>
+            <span>Live Simulator</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT -->
+      <main class="dashboard-content">
+        <!-- KPI METRICS GRID -->
+        <section class="kpi-grid">
+          <!-- Card 1: Cumulative Headcount -->
+          <div class="kpi-card" id="kpi-headcount">
+            <div class="kpi-icon text-indigo">👤</div>
+            <div class="kpi-info">
+              <h3>Cumulative Headcount</h3>
+              <div class="kpi-value-container">
+                <span class="kpi-value" id="val-cumulative">-</span>
+                <span class="kpi-trend trend-up" id="trend-cumulative">+14.2%</span>
+              </div>
+              <p class="kpi-subtext">Total unique visitors today</p>
+            </div>
+          </div>
+
+          <!-- Card 2: Live Occupancy -->
+          <div class="kpi-card" id="kpi-occupancy">
+            <div class="kpi-icon text-cyan">🟢</div>
+            <div class="kpi-info">
+              <h3>Live Occupancy</h3>
+              <div class="kpi-value-container">
+                <span class="kpi-value" id="val-occupancy">-</span>
+                <span class="kpi-badge pulse" id="badge-occupancy-status">Normal</span>
+              </div>
+              <p class="kpi-subtext">Active shoppers inside zone</p>
+            </div>
+          </div>
+
+          <!-- Card 3: Avg Dwell Time -->
+          <div class="kpi-card" id="kpi-dwell">
+            <div class="kpi-icon text-emerald">⏱️</div>
+            <div class="kpi-info">
+              <h3>Avg Dwell Time</h3>
+              <div class="kpi-value-container">
+                <span class="kpi-value" id="val-dwell">-</span>
+                <span class="kpi-trend trend-up" id="trend-dwell">+4.8%</span>
+              </div>
+              <p class="kpi-subtext">Average minutes spent</p>
+            </div>
+          </div>
+
+          <!-- Card 4: Peak Traffic Hour -->
+          <div class="kpi-card" id="kpi-peak">
+            <div class="kpi-icon text-coral">🔥</div>
+            <div class="kpi-info">
+              <h3>Peak Traffic Hour</h3>
+              <div class="kpi-value-container">
+                <span class="kpi-value" id="val-peak">-</span>
+                <span class="kpi-subtext-inline" id="val-peak-volume">- pax/hr</span>
+              </div>
+              <p class="kpi-subtext">Busiest period today</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAIN TRAFFIC & LOCATIONS GRID -->
+        <section class="main-analytics-grid">
+          <!-- Primary Chart Card: Traffic trends -->
+          <div class="grid-card traffic-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <h2>Footfall Traffic Trend</h2>
+                <p>Hourly and daily traffic volume comparison</p>
+              </div>
+              <div class="toggle-group">
+                <button class="toggle-btn active" id="btn-hourly">Hourly</button>
+                <button class="toggle-btn" id="btn-daily">Daily</button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <div id="traffic-chart"></div>
+            </div>
+          </div>
+
+          <!-- Right Column Layout Container -->
+          <div class="right-column-container">
+            <!-- Live Video Card -->
+            <div class="grid-card video-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h2>Live Face Analytics</h2>
+                  <p>Entrance Node 01 - Demographics Sensor</p>
+                </div>
+                <div class="card-badge pulse" style="background-color:rgba(244,63,94,0.1); border-color:rgba(244,63,94,0.3); color:var(--color-coral); font-weight:700;">Live Cam</div>
+              </div>
+              
+              <div class="video-container-wrapper">
+                <video id="entrance-video" src="/entrance_processed.mp4" autoplay loop muted playsinline></video>
+              </div>
+              
+              <div class="video-telemetry">
+                <div class="telemetry-item">
+                  <span class="telemetry-label">Active Faces</span>
+                  <span class="telemetry-val" id="video-active-faces">0</span>
+                </div>
+                <div class="telemetry-item">
+                  <span class="telemetry-label">Unique Counts</span>
+                  <span class="telemetry-val" id="video-unique-counts">0</span>
+                </div>
+                <div class="telemetry-item">
+                  <span class="telemetry-label">Stream Status</span>
+                  <span class="telemetry-val" style="color:var(--color-emerald); font-weight:700;">Analyzing</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Location Breakdown Card -->
+            <div class="grid-card locations-card" id="locations-breakdown-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h2>Zone Densities</h2>
+                  <p>Real-time occupancy across mall wings</p>
+                </div>
+                <div class="card-badge" id="multi-site-indicator">Multi-Zone</div>
+              </div>
+              <div class="locations-list" id="zones-list">
+                <!-- Dynamically populated in main.js -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DEMOGRAPHICS SECTION -->
+        <section class="demographics-header">
+          <h2>Demographic Breakdown</h2>
+          <p>Audience profile analytics (Sex, Age, Ethnicity) based on AI sensor nodes</p>
+        </section>
+
+        <section class="demographics-grid">
+          <!-- Card: Sex Demographic -->
+          <div class="grid-card demo-card">
+            <div class="card-header">
+              <h3>Gender Distribution</h3>
+            </div>
+            <div class="chart-container demo-chart-donut">
+              <div id="sex-chart"></div>
+            </div>
+          </div>
+
+          <!-- Card: Age Demographic -->
+          <div class="grid-card demo-card age-card">
+            <div class="card-header">
+              <h3>Age Segments</h3>
+            </div>
+            <div class="chart-container">
+              <div id="age-chart"></div>
+            </div>
+          </div>
+
+          <!-- Card: Ethnicity Demographic -->
+          <div class="grid-card demo-card">
+            <div class="card-header">
+              <h3>Ethnic Profile</h3>
+            </div>
+            <div class="chart-container">
+              <div id="ethnicity-chart"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="dashboard-footer">
+        <p>&copy; 2026 SingaSense Mall Analytics. Running in research environment mode.</p>
+        <div class="footer-status">
+          <span class="status-dot green"></span>
+          <span id="simulator-time">Simulated Time: 12:00 PM (Weekday)</span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- LIVE SIMULATOR DRAWER -->
+    <div class="simulator-drawer" id="simulator-drawer">
+      <div class="drawer-header">
+        <h3>⚡ Live Data Simulator & Control Room</h3>
+        <button id="close-simulator-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="drawer-body">
+        <div class="simulator-col">
+          <h4>Time Controls</h4>
+          <div class="sim-control-group">
+            <label for="sim-speed">Simulation Speed: <span id="sim-speed-val">10s = 1hr</span></label>
+            <input type="range" id="sim-speed" min="0" max="4" value="2" step="1">
+            <span class="range-hint">0: Paused | 4: Hyper-speed</span>
+          </div>
+          <div class="sim-control-group">
+            <label>Manual Time Adjust</label>
+            <div class="btn-row">
+              <button class="btn btn-sm btn-outline" id="btn-set-morning">🌅 Morning</button>
+              <button class="btn btn-sm btn-outline" id="btn-set-noon">☀️ Lunch Peak</button>
+              <button class="btn btn-sm btn-outline" id="btn-set-evening">🌆 Dinner Peak</button>
+              <button class="btn btn-sm btn-outline" id="btn-set-night">🌙 Late Night</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="simulator-col">
+          <h4>Traffic Profiles</h4>
+          <div class="sim-control-group">
+            <label>Base Profile</label>
+            <div class="btn-row">
+              <button class="btn btn-sm btn-outline active" id="btn-profile-weekday">Weekday Normal</button>
+              <button class="btn btn-sm btn-outline" id="btn-profile-weekend">Weekend Rush</button>
+              <button class="btn btn-sm btn-outline" id="btn-profile-holiday">Holiday Sale</button>
+            </div>
+          </div>
+          <div class="sim-control-group">
+            <label for="traffic-multiplier">Crowd Multiplier: <span id="multiplier-val">1.0x</span></label>
+            <input type="range" id="traffic-multiplier" min="0.2" max="2.5" value="1.0" step="0.1">
+          </div>
+        </div>
+
+        <div class="simulator-col">
+          <h4>Anomalous Events</h4>
+          <p class="section-desc">Trigger instant event impulses in the mall</p>
+          <div class="btn-row vertical">
+            <button class="btn btn-sm btn-danger" id="btn-evt-flashsale">🛍️ Flash Sale in Fashion Hub (+300 pax)</button>
+            <button class="btn btn-sm btn-danger" id="btn-evt-concert">🎤 Outdoor Concert at South Plaza (+1000 pax)</button>
+            <button class="btn btn-sm btn-warning" id="btn-evt-evacuate">🚨 Fire Drill (Evacuation)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

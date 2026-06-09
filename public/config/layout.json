@@ -1,0 +1,55 @@
+{
+  "preset": "balanced",
+  "columns": {
+    "leftMin": 290,
+    "leftFr": 1.05,
+    "centerMin": 520,
+    "centerFr": 0.92,
+    "rightMin": 310,
+    "rightFr": 1.08
+  },
+  "visibility": {
+    "left": true,
+    "center": true,
+    "right": true
+  },
+  "video": {
+    "aspectW": 16,
+    "aspectH": 9,
+    "widthPercent": 100,
+    "fit": "contain"
+  },
+  "typography": {
+    "baseSize": 13,
+    "kpiSize": 22,
+    "donutSize": 168,
+    "donutValSize": 28,
+    "chartFontSize": 11,
+    "logFontSize": 12,
+    "panelTitleSize": 11,
+    "sexBarValSize": 14
+  },
+  "spacing": {
+    "gridGap": 10,
+    "padding": 10
+  },
+  "rightColumn": {
+    "trafficFlex": 1,
+    "logFlex": 1.15
+  },
+  "panels": {
+    "order": {
+      "left": ["sex", "age", "origin"],
+      "center": ["video"],
+      "right": ["traffic", "log"]
+    },
+    "flex": {
+      "sex": 0,
+      "age": 1,
+      "origin": 1,
+      "video": 0,
+      "traffic": 1,
+      "log": 1.15
+    }
+  }
+}

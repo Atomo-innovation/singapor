@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATOMO — Surveillance Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/dashboard.css" />
+</head>
+<body>
+
+<!-- ══ SCAN LINE OVERLAY ══════════════════════════════════════════════ -->
+<div class="scanlines" aria-hidden="true"></div>
+
+<!-- ══ TOP BAR ═══════════════════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M16 4C9.37 4 4 9.37 4 16s5.37 12 12 12 12-5.37 12-12S22.63 4 16 4z" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <line x1="16" y1="2" x2="16" y2="7" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="16" y1="25" x2="16" y2="30" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="2" y1="16" x2="7" y2="16" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="25" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">ATOMO</span>
+        <span class="brand-sub">SURVEILLANCE OPS v2.4.1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="topbar-center">
+    <div class="sys-stat">
+      <span class="sys-dot live"></span>
+      <span class="sys-label">SYSTEM ONLINE</span>
+    </div>
+    <div class="divider-v"></div>
+    <div class="sys-stat">
+      <span class="sys-dot"></span>
+      <span class="sys-label">CAM 01 — MAIN ENTRANCE</span>
+    </div>
+    <div class="divider-v"></div>
+    <div id="clock-wrap" class="clock-wrap">
+      <span id="clock-time" class="clock-time">00:00:00</span>
+      <span id="clock-date" class="clock-date">—</span>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <button type="button" class="layout-open-btn layout-edit-btn" id="layout-edit-btn" title="Drag to rearrange panels" aria-pressed="false">
+      <span>⠿</span> EDIT
+    </button>
+    <button type="button" class="layout-open-btn" id="layout-open-btn" title="Layout settings">
+      <span>⊞</span> LAYOUT
+    </button>
+    <div class="kpi-chip">
+      <span class="kpi-icon">◈</span>
+      <div class="kpi-body">
+        <span class="kpi-val" id="active-count">—</span>
+        <span class="kpi-lbl">ACTIVE</span>
+      </div>
+    </div>
+    <div class="kpi-chip accent2">
+      <span class="kpi-icon">◉</span>
+      <div class="kpi-body">
+        <span class="kpi-val" id="total-count">—</span>
+        <span class="kpi-lbl">TODAY</span>
+      </div>
+    </div>
+    <div class="kpi-chip accent3">
+      <span class="kpi-icon">▲</span>
+      <div class="kpi-body">
+        <span class="kpi-val" id="conf-avg">—</span>
+        <span class="kpi-lbl">CONF AVG</span>
+      </div>
+    </div>
+    <div class="rec-badge">
+      <span class="rec-dot"></span>REC
+    </div>
+  </div>
+</header>
+
+<div class="layout-edit-banner" id="layout-edit-banner" aria-live="polite">
+  <span>Drag panel headers to move · Drag column edges to resize width · Drag panel bottom edge to resize height</span>
+  <button type="button" id="layout-edit-done">DONE</button>
+</div>
+
+<!-- ══ MAIN GRID ══════════════════════════════════════════════════════ -->
+<main class="dashboard">
+
+  <!-- ── LEFT COLUMN ─────────────────────────────────────────────── -->
+  <aside class="col-left">
+
+    <!-- Analytics: Sex -->
+    <div class="panel" data-panel-id="sex" data-resizable="false">
+      <div class="panel-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <span class="panel-tag">01</span>
+        <span class="panel-title">SEX DISTRIBUTION</span>
+      </div>
+      <div class="panel-body donut-panel">
+        <div class="donut-wrap">
+          <canvas id="sex-chart"></canvas>
+          <div class="donut-inner" id="donut-inner">
+            <span class="donut-val" id="sex-pct">—</span>
+            <span class="donut-sub">MALE</span>
+          </div>
+        </div>
+        <div class="sex-bars" id="sex-bars"></div>
+      </div>
+    </div>
+
+    <!-- Analytics: Age -->
+    <div class="panel panel-flex" data-panel-id="age">
+      <div class="panel-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <span class="panel-tag">02</span>
+        <span class="panel-title">AGE BREAKDOWN</span>
+      </div>
+      <div class="panel-body panel-body-chart">
+        <canvas id="age-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Analytics: Origin -->
+    <div class="panel panel-flex" data-panel-id="origin">
+      <div class="panel-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <span class="panel-tag">03</span>
+        <span class="panel-title">ORIGIN / ETHNICITY</span>
+      </div>
+      <div class="panel-body panel-body-chart">
+        <canvas id="origin-chart"></canvas>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── CENTER COLUMN (VIDEO) ───────────────────────────────────── -->
+  <section class="col-center">
+
+    <div class="panel panel-video" data-panel-id="video" data-resizable="false">
+      <!-- Corner brackets -->
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <div class="video-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <div class="vhd-left">
+          <span class="vhd-cam">CAM_01</span>
+          <span class="vhd-sep">//</span>
+          <span class="vhd-loc">MAIN ENTRANCE</span>
+        </div>
+        <div class="vhd-right">
+          <span class="vhd-res">1920×1080</span>
+          <span class="vhd-sep">//</span>
+          <span class="vhd-fps">30FPS</span>
+        </div>
+      </div>
+
+      <div class="video-wrap">
+        <video id="feed-video" autoplay muted loop playsinline>
+          <source src="/videos/feed.mp4" type="video/mp4" />
+          <source src="/videos/feed.webm" type="video/webm" />
+        </video>
+        <canvas id="detection-canvas"></canvas>
+
+        <!-- Fallback placeholder -->
+        <div class="video-placeholder" id="video-placeholder">
+          <div class="vp-grid"></div>
+          <div class="vp-inner">
+            <div class="vp-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2">
+                <rect x="4" y="12" width="32" height="24" rx="2"/>
+                <path d="M36 20l8-6v20l-8-6V20z"/>
+                <circle cx="20" cy="24" r="5"/>
+              </svg>
+            </div>
+            <p class="vp-title">NO SIGNAL</p>
+            <p class="vp-hint">Place <code>feed.mp4</code> or <code>feed.webm</code><br/>into <code>public/videos/</code></p>
+          </div>
+        </div>
+
+        <!-- HUD overlays -->
+        <div class="hud-tl">
+          <span class="hud-label">DETECTION ACTIVE</span>
+          <span class="hud-val" id="det-count-hud">0 SUBJECTS</span>
+        </div>
+        <div class="hud-tr">
+          <span class="hud-label">CONFIDENCE</span>
+          <span class="hud-val accent" id="conf-hud">—%</span>
+        </div>
+        <div class="hud-bl">
+          <span class="hud-coords" id="hud-coords">LAT 23.0225° N  |  LNG 72.5714° E</span>
+        </div>
+        <div class="hud-br">
+          <span class="hud-label">FRAME</span>
+          <span class="hud-val mono" id="frame-counter">000000</span>
+        </div>
+
+        <!-- Sweep line -->
+        <div class="sweep-line" id="sweep-line"></div>
+      </div>
+
+      <div class="video-ft">
+        <div class="vft-item">
+          <span class="vft-dot green"></span>
+          <span>AI DETECTION ENGINE RUNNING</span>
+        </div>
+        <div class="vft-item">
+          <span class="vft-dot yellow"></span>
+          <span id="last-det-time">LAST DETECT: —</span>
+        </div>
+        <div class="vft-item">
+          <span class="vft-dot"></span>
+          <span>STREAM ENCRYPTED · AES-256</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── RIGHT COLUMN ────────────────────────────────────────────── -->
+  <aside class="col-right">
+
+    <!-- Foot Traffic chart -->
+    <div class="panel panel-flex" data-panel-id="traffic">
+      <div class="panel-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <span class="panel-tag">04</span>
+        <span class="panel-title">FOOT TRAFFIC</span>
+        <div class="chart-tabs">
+          <button class="tab-btn active" data-tab="hourly">HOURLY</button>
+          <button class="tab-btn" data-tab="daily">DAILY</button>
+        </div>
+      </div>
+      <div class="panel-body panel-body-chart">
+        <canvas id="traffic-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Detection Log -->
+    <div class="panel panel-log" data-panel-id="log">
+      <div class="panel-hd">
+        <button type="button" class="panel-drag-handle" aria-label="Drag panel" tabindex="-1">⠿</button>
+        <span class="panel-tag">05</span>
+        <span class="panel-title">DETECTION LOG</span>
+        <div class="badge-live">
+          <span class="rec-dot sm"></span>LIVE
+        </div>
+      </div>
+
+      <div class="log-thead">
+        <span>TIME</span>
+        <span>SEX</span>
+        <span>AGE</span>
+        <span>ORIGIN</span>
+        <span>CONF</span>
+      </div>
+
+      <div class="log-scroll" id="detection-log">
+        <div class="log-empty">
+          <span>AWAITING DETECTION SIGNAL…</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- ══ LAYOUT SETTINGS PANEL ══════════════════════════════════════════ -->
+<div class="layout-backdrop" id="layout-backdrop" aria-hidden="true"></div>
+<aside class="layout-panel" id="layout-panel" aria-label="Layout settings">
+  <div class="layout-panel-hd">
+    <span class="layout-panel-title">LAYOUT CONFIG</span>
+    <button type="button" class="layout-panel-close" id="layout-close-btn" aria-label="Close">×</button>
+  </div>
+  <div class="layout-panel-body">
+
+    <div>
+      <div class="layout-section-title">DRAG &amp; DROP</div>
+      <p class="layout-hint" style="margin-bottom:10px">
+        Click <strong>EDIT</strong> in the top bar to drag panels, resize columns, and adjust panel heights visually.
+      </p>
+      <button type="button" class="layout-action-btn primary" id="layout-edit-open-btn" style="width:100%">OPEN EDIT MODE</button>
+    </div>
+
+    <div>
+      <div class="layout-section-title">PRESETS</div>
+      <div class="layout-presets">
+        <button type="button" class="layout-preset-btn" data-preset="balanced">BALANCED</button>
+        <button type="button" class="layout-preset-btn" data-preset="analytics">ANALYTICS</button>
+        <button type="button" class="layout-preset-btn" data-preset="video">VIDEO</button>
+        <button type="button" class="layout-preset-btn" data-preset="compact">COMPACT</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">COLUMN WIDTH (flex ratio)</div>
+      <div class="layout-field">
+        <label>Left analytics <span class="val" id="val-left-fr">1.05</span></label>
+        <input type="range" class="layout-range" id="cfg-left-fr" data-display="val-left-fr" min="0.5" max="2" step="0.05" value="1.05" />
+      </div>
+      <div class="layout-field">
+        <label>Center video <span class="val" id="val-center-fr">0.92</span></label>
+        <input type="range" class="layout-range" id="cfg-center-fr" data-display="val-center-fr" min="0.4" max="2" step="0.05" value="0.92" />
+      </div>
+      <div class="layout-field">
+        <label>Right analytics <span class="val" id="val-right-fr">1.08</span></label>
+        <input type="range" class="layout-range" id="cfg-right-fr" data-display="val-right-fr" min="0.5" max="2" step="0.05" value="1.08" />
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">COLUMN MIN WIDTH (px)</div>
+      <div class="layout-field">
+        <label>Left min <span class="val" id="val-left-min">290</span></label>
+        <input type="range" class="layout-range" id="cfg-left-min" data-display="val-left-min" min="180" max="480" step="10" value="290" />
+      </div>
+      <div class="layout-field">
+        <label>Center min <span class="val" id="val-center-min">520</span></label>
+        <input type="range" class="layout-range" id="cfg-center-min" data-display="val-center-min" min="320" max="900" step="10" value="520" />
+      </div>
+      <div class="layout-field">
+        <label>Right min <span class="val" id="val-right-min">310</span></label>
+        <input type="range" class="layout-range" id="cfg-right-min" data-display="val-right-min" min="180" max="480" step="10" value="310" />
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">VIDEO STREAM</div>
+      <div class="layout-field">
+        <label>Width scale <span class="val" id="val-video-width">100</span>%</label>
+        <input type="range" class="layout-range" id="cfg-video-width" data-display="val-video-width" min="60" max="100" step="1" value="100" />
+      </div>
+      <div class="layout-field">
+        <label for="cfg-video-aspect">Aspect ratio</label>
+        <select id="cfg-video-aspect">
+          <option value="16:9">16:9 (1080p)</option>
+          <option value="4:3">4:3</option>
+          <option value="21:9">21:9 (ultrawide)</option>
+        </select>
+      </div>
+      <div class="layout-field">
+        <label for="cfg-video-fit">Video fit</label>
+        <select id="cfg-video-fit">
+          <option value="contain">Contain (full frame)</option>
+          <option value="cover">Cover (fill, may crop)</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">TEXT &amp; CHARTS</div>
+      <div class="layout-field">
+        <label>KPI count size <span class="val" id="val-kpi-size">22</span>px</label>
+        <input type="range" class="layout-range" id="cfg-kpi-size" data-display="val-kpi-size" min="14" max="32" step="1" value="22" />
+      </div>
+      <div class="layout-field">
+        <label>Donut chart size <span class="val" id="val-donut-size">168</span>px</label>
+        <input type="range" class="layout-range" id="cfg-donut-size" data-display="val-donut-size" min="100" max="240" step="4" value="168" />
+      </div>
+      <div class="layout-field">
+        <label>Chart labels <span class="val" id="val-chart-font">11</span>px</label>
+        <input type="range" class="layout-range" id="cfg-chart-font" data-display="val-chart-font" min="8" max="16" step="1" value="11" />
+      </div>
+      <div class="layout-field">
+        <label>Log table text <span class="val" id="val-log-font">12</span>px</label>
+        <input type="range" class="layout-range" id="cfg-log-font" data-display="val-log-font" min="9" max="16" step="1" value="12" />
+      </div>
+      <div class="layout-field">
+        <label>Panel gap <span class="val" id="val-grid-gap">10</span>px</label>
+        <input type="range" class="layout-range" id="cfg-grid-gap" data-display="val-grid-gap" min="4" max="20" step="1" value="10" />
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">RIGHT COLUMN SPLIT</div>
+      <div class="layout-field">
+        <label>Foot traffic height <span class="val" id="val-traffic-flex">1</span></label>
+        <input type="range" class="layout-range" id="cfg-traffic-flex" data-display="val-traffic-flex" min="0.5" max="2" step="0.05" value="1" />
+      </div>
+      <div class="layout-field">
+        <label>Detection log height <span class="val" id="val-log-flex">1.15</span></label>
+        <input type="range" class="layout-range" id="cfg-log-flex" data-display="val-log-flex" min="0.5" max="2.5" step="0.05" value="1.15" />
+      </div>
+    </div>
+
+    <div>
+      <div class="layout-section-title">VISIBILITY</div>
+      <div class="layout-toggles">
+        <label class="layout-toggle"><input type="checkbox" id="cfg-show-left" checked /> Left analytics column</label>
+        <label class="layout-toggle"><input type="checkbox" id="cfg-show-center" checked /> Center video column</label>
+        <label class="layout-toggle"><input type="checkbox" id="cfg-show-right" checked /> Right analytics column</label>
+      </div>
+    </div>
+
+    <div class="layout-actions">
+      <button type="button" class="layout-action-btn" id="layout-reset-btn">RESET DEFAULTS</button>
+      <button type="button" class="layout-action-btn primary" id="layout-export-btn">EXPORT JSON</button>
+    </div>
+
+    <p class="layout-hint">
+      Settings auto-save in your browser. Edit defaults in
+      <code>public/config/layout.json</code> for team-wide config.
+    </p>
+
+  </div>
+</aside>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/layout-manager.js"></script>
+<script src="/js/layout-drag.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
